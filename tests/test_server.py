@@ -223,3 +223,17 @@ def test_import_text(live):
     app, port = live
     status, _, body = call(port, "POST", "/api/import/text", {"text": "1. افتح\n2. اقفل"}, headers=auth(app))
     assert status == 200 and json.loads(body)["steps"] == ["افتح", "اقفل"]
+
+
+def test_shutdown_needs_token_and_stops(live):
+    app, port = live
+    stopped = []
+    app.stop = lambda: stopped.append(True)
+    cookie_only = {"Cookie": f"{server.COOKIE}={app.secret}"}
+    assert call(port, "POST", "/api/shutdown", {}, headers=cookie_only)[0] == 403
+    assert call(port, "POST", "/api/shutdown", {}, headers=auth(app))[0] == 200
+    for _ in range(50):
+        if stopped:
+            break
+        time.sleep(0.05)
+    assert stopped and app.job.cancel.is_set()

@@ -11,7 +11,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import __version__, doctor, narrate, render
+from . import __version__, doctor, narrate, render, system
 from .guide import GuideError, Store, clean, natural_key, new_step
 from .layers import ImageProblem, open_screenshot
 
@@ -23,6 +23,13 @@ def default_root() -> Path:
 
 
 def _utf8_console() -> None:
+    """UTF-8 output; without a console (pythonw, the installed app) write to a log file instead."""
+    if sys.stdout is None or sys.stderr is None:
+        from .system import state_dir
+
+        log = open(state_dir() / "warrini.log", "a", encoding="utf-8", buffering=1)  # noqa: SIM115
+        sys.stdout = sys.stdout or log
+        sys.stderr = sys.stderr or log
     for stream in (sys.stdout, sys.stderr):
         with contextlib.suppress(AttributeError, ValueError):
             stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
@@ -30,6 +37,7 @@ def _utf8_console() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     _utf8_console()
+    system.use_bundled_ffmpeg()
     parser = argparse.ArgumentParser(
         prog="warrini",
         description="ورّيني: حوّل خطوات الشغل لفيديو قصير بصوت مصري. مجاني وبيشتغل على جهازك.",

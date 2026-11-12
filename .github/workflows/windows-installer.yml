@@ -1,0 +1,159 @@
+name: Windows installer
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the installer to (empty = keep as a workflow artifact only)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      PYTHON_VERSION: "3.12.10"
+      STAGE: ${{ github.workspace }}\build\Warrini
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          v=$(python -c "import re;print(re.search(r'__version__ = \"(.+?)\"', open('warrini/__init__.py').read()).group(1))")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Embedded Python
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "$env:STAGE\python" | Out-Null
+          Invoke-WebRequest "https://www.python.org/ftp/python/$env:PYTHON_VERSION/python-$env:PYTHON_VERSION-embed-amd64.zip" -OutFile py.zip
+          Expand-Archive py.zip -DestinationPath "$env:STAGE\python"
+          # let the embedded Python use site-packages (pip installs there)
+          $pth = Get-ChildItem "$env:STAGE\python\python3*._pth" | Select-Object -First 1
+          Set-Content $pth.FullName "python312.zip`r`n.`r`nLib\site-packages`r`nimport site"
+          Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile get-pip.py
+          & "$env:STAGE\python\python.exe" get-pip.py --no-warn-script-location
+
+      - name: Install Warrini and the local voice
+        shell: pwsh
+        run: |
+          $py = "$env:STAGE\python\python.exe"
+          & $py -m pip install --no-warn-script-location --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+          if ($LASTEXITCODE) { exit 1 }
+          & $py -m pip install --no-warn-script-location --no-cache-dir ".[voicetut]"
+          if ($LASTEXITCODE) { exit 1 }
+          & $py -c "import torch, omnivoice, voicetut_tts, warrini; print('torch', torch.__version__, 'warrini', warrini.__version__)"
+          if ($LASTEXITCODE) { exit 1 }
+
+      - name: Microsoft C++ runtime next to Python (PyTorch needs it; not every PC has it)
+        shell: pwsh
+        run: |
+          foreach ($dll in "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vcruntime140.dll", "vcruntime140_1.dll", "concrt140.dll", "vcomp140.dll") {
+            $src = "C:\Windows\System32\$dll"
+            if ((Test-Path $src) -and -not (Test-Path "$env:STAGE\python\$dll")) { Copy-Item $src "$env:STAGE\python\" }
+          }
+
+      - name: ffmpeg with libass
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -OutFile ff.zip
+          Expand-Archive ff.zip -DestinationPath ff
+          New-Item -ItemType Directory -Force "$env:STAGE\ffmpeg" | Out-Null
+          $bin = Get-ChildItem ff -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item "$($bin.DirectoryName)\ffmpeg.exe", "$($bin.DirectoryName)\ffprobe.exe" "$env:STAGE\ffmpeg\"
+          Copy-Item "$($bin.Directory.Parent.FullName)\LICENSE.txt" "$env:STAGE\ffmpeg\LICENSE.txt" -ErrorAction SilentlyContinue
+
+      - name: Icon
+        run: |
+          pip install pillow
+          python packaging/windows/make_icon.py "$env:STAGE\warrini.ico"
+
+      - name: Check the staged app
+        shell: pwsh
+        env:
+          WARRINI_VOICE: fake
+          WARRINI_HOME: ${{ runner.temp }}\guides
+        run: |
+          $py = "$env:STAGE\python\python.exe"
+          $env:PATH = "C:\Windows\System32;C:\Windows"   # nothing from the runner: the app must find its own ffmpeg
+          & $py -m warrini doctor
+          if ($LASTEXITCODE -gt 0) { exit 1 }
+          & $py -m warrini render examples\vpn-password --quality fast -o "$env:RUNNER_TEMP\staged.mp4"
+          if ($LASTEXITCODE) { exit 1 }
+
+      - name: The local voice speaks (downloads the model once)
+        shell: pwsh
+        timeout-minutes: 45
+        run: |
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          & "$env:STAGE\python\python.exe" packaging\windows\voice_smoke.py
+          if ($LASTEXITCODE) { exit 1 }
+
+      - name: Clean the staged folder
+        shell: pwsh
+        run: |
+          Get-ChildItem $env:STAGE -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Force
+          Remove-Item "$env:STAGE\python\Scripts" -Recurse -Force -ErrorAction SilentlyContinue
+          "{0:N0} MB staged" -f ((Get-ChildItem $env:STAGE -Recurse -File | Measure-Object Length -Sum).Sum / 1MB)
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.version }}" "/DSourceDir=$env:STAGE" "/DOutputDir=$env:GITHUB_WORKSPACE\dist" packaging\windows\installer.iss
+          if ($LASTEXITCODE) { exit 1 }
+          Get-ChildItem dist | Format-Table Name, @{n="MB";e={[math]::Round($_.Length/1MB)}}
+
+      - name: Install, run and uninstall like a user
+        shell: pwsh
+        env:
+          WARRINI_VOICE: fake
+          WARRINI_HOME: ${{ runner.temp }}\guides2
+        run: |
+          $setup = Get-ChildItem dist\Warrini-Setup-*.exe | Select-Object -First 1
+          Start-Process $setup.FullName -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER" -Wait
+          $app = "$env:LOCALAPPDATA\Programs\Warrini"
+          if (-not (Test-Path "$app\python\pythonw.exe")) { throw "not installed" }
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          & "$app\python\python.exe" -m warrini render examples\vpn-password --quality fast -o "$env:RUNNER_TEMP\installed.mp4"
+          if ($LASTEXITCODE) { exit 1 }
+          # start it the way the shortcut does (no console), then check it answers
+          Start-Process "$app\python\pythonw.exe" -ArgumentList "-m", "warrini", "ui", "--no-browser"
+          $running = "$env:LOCALAPPDATA\Warrini\running.json"
+          for ($i = 0; $i -lt 60 -and -not (Test-Path $running); $i++) { Start-Sleep 1 }
+          if (-not (Test-Path $running)) { Get-Content "$env:LOCALAPPDATA\Warrini\warrini.log" -ErrorAction SilentlyContinue; throw "app did not start" }
+          $url = (Get-Content $running | ConvertFrom-Json).url
+          $r = Invoke-WebRequest $url -MaximumRedirection 0 -SkipHttpErrorCheck
+          if ($r.StatusCode -ne 303) { throw "launch returned $($r.StatusCode)" }
+          Get-Process pythonw -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep 2
+          Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES" -Wait
+          Start-Sleep 3
+          if (Test-Path "$app\python") { throw "uninstall left files behind" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Warrini-Setup-${{ steps.version.outputs.version }}
+          path: dist/Warrini-Setup-*.exe
+          retention-days: 14
+
+      - name: Attach to the release
+        if: github.event_name == 'release' || inputs.tag != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release upload "$TAG" dist/Warrini-Setup-*.exe --clobber

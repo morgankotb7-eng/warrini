@@ -35,6 +35,14 @@
 
 ## تبدأ إزاي
 
+### على Windows: برنامج تسطيب واحد
+
+نزّل **Warrini-Setup** من [آخر release](https://github.com/morgankotb7-eng/warrini/releases/latest)، ودوس عليه دبل كليك، وافتح **ورّيني** من الـ Start menu أو من على الـ Desktop. الـ Python والـ ffmpeg والصوت المصري كلهم جوّه، مش محتاج تسطّب أي حاجة تانية ولا محتاج صلاحيات admin.
+
+البرنامج لسه مش موقّع (code signing)، فممكن Windows يقولك «Windows protected your PC». دوس **More info** وبعدين **Run anyway**. أول مرة تسمع خطوة أو تعمل فيديو، موديل الصوت بينزل مرة واحدة (حوالي 2 جيجا).
+
+### على أي نظام، بالـ Python
+
 محتاج **Python 3.11 أو أحدث** و **ffmpeg فيه libass** (الأمر `warrini doctor` بيتأكدلك).
 
 ```bash

@@ -1112,7 +1112,7 @@ async function listen(step) {
   stopAudio();
   state.audio = { stepId: step.id, loading: true, el: null };
   renderEditor(true);
-  const slow = setTimeout(() => { if (state.audio && state.audio.loading) toast("أول مرة الصوت المحلي بياخد وقت عشان يحمّل الموديل… استنى شوية", { ms: 8000 }); }, 4000);
+  const slow = setTimeout(() => { if (state.audio && state.audio.loading) toast("أول مرة الصوت المصري بيجهّز نفسه (ولو أول تشغيل خالص بينزّل حوالي 2 جيجا مرة واحدة). استنى شوية…", { ms: 12000 }); }, 4000);
   try {
     const res = await api("POST", `/api/guides/${state.slug}/voice`, { text: step.text });
     clearTimeout(slow);
@@ -1365,6 +1365,25 @@ window.addEventListener("beforeunload", (e) => {
 });
 
 $("#make-video").addEventListener("click", makeVideo);
+$("#quit").addEventListener("click", quitApp);
+
+async function quitApp() {
+  const job = await api("GET", "/api/job").catch(() => ({}));
+  const ok = await confirmModal({
+    title: "تقفل ورّيني؟",
+    message: job.state === "running" ? "فيه فيديو بيتعمل دلوقتي وهيتلغى. شغلك كله محفوظ." : "شغلك كله محفوظ. لما تحب ترجع، افتح ورّيني من الـ Start menu أو من على الـ Desktop.",
+    ok: "اقفل",
+  });
+  if (!ok) return;
+  await flushSave();
+  try { await api("POST", "/api/shutdown"); } catch { /* already closing */ }
+  document.body.classList.remove("is-editor");
+  $("#health").hidden = true;
+  $(".topbar-end").replaceChildren();
+  $("#crumbs").replaceChildren();
+  $("#main").replaceChildren(h("div", { class: "loading-page" }, h("div", { class: "empty" },
+    h("h2", {}, "ورّيني اتقفل"), h("p", {}, "تقدر تقفل الصفحة دي. شغلك متحفظ في فولدر Warrini."))));
+}
 $("#go-home").addEventListener("click", () => { location.hash = "#/"; });
 window.addEventListener("hashchange", route);
 

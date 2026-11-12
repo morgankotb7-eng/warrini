@@ -23,7 +23,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-voicetut = ["ehky[voicetut] @ git+https://github.com/morgankotb7-eng/ehky@v0.2.0"]
+# the local Egyptian voice: the VoiceTut model, its OmniVoice backbone and PyTorch
+voicetut = ["voicetut-tts>=0.1.1", "omnivoice>=0.2.1", "torch>=2.2"]
 dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.urls]

@@ -5,9 +5,9 @@ from __future__ import annotations
 import platform
 import shutil
 
-from ehky import compose, tts
+from ehky import tts
 
-from . import __version__
+from . import __version__, system
 
 OK, BAD, WARN = "✔", "✘", "!"
 
@@ -31,7 +31,7 @@ def run() -> int:
     ffprobe = shutil.which("ffprobe")
     if ffmpeg and ffprobe:
         print(f"{OK} ffmpeg: {ffmpeg}")
-        if compose.has_libass(ffmpeg):
+        if system.has_libass(ffmpeg):
             print(f"{OK} libass: موجودة (النص العربي على الفيديو)")
         else:
             problems += 1
@@ -45,6 +45,7 @@ def run() -> int:
         print(
             f"{WARN} الصوت المصري المحلي مش متسطب. تقدر تسطّبه مرة واحدة:\n"
             '    pip install "warrini[voicetut] @ git+https://github.com/morgankotb7-eng/warrini"\n'
+            "  على Windows أسهل طريقة برنامج التسطيب من صفحة الـ Releases (الصوت جاهز فيه).\n"
             "  أول مرة بينزّل الموديل (حوالي 2 جيجا). لو الشبكة وراها proxy، ظبط HTTPS_PROXY.\n"
             "  أو استخدم الصوت الأونلاين من إعدادات الدليل (بيبعت النص لـ Microsoft)."
         )

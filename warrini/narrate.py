@@ -30,6 +30,7 @@ from ehky import text as ehky_text
 from ehky import tts
 
 from .guide import GuideError, write_atomic
+from .system import NO_WINDOW
 from .timeline import estimate_seconds
 
 RATE = 48_000
@@ -41,9 +42,8 @@ CHUNK_GAP = 0.28  # silence between chunks of one segment, seconds
 CACHE_LIMIT = 1024**3
 
 VOICETUT_SETUP = (
-    "الصوت المصري المحلي مش متسطب. سطّبه مرة واحدة: "
-    'pip install "warrini[voicetut] @ git+https://github.com/morgankotb7-eng/warrini" '
-    "(أول مرة بينزّل الموديل من الإنترنت، حوالي 2 جيجا)"
+    "الصوت المصري المحلي مش متسطب. على Windows نزّل برنامج التسطيب من صفحة الـ Releases، "
+    'أو سطّبه بالأمر: pip install "warrini[voicetut] @ git+https://github.com/morgankotb7-eng/warrini"'
 )
 
 
@@ -116,6 +116,7 @@ def to_standard_wav(src: Path, dst: Path, ffmpeg: str) -> None:
         capture_output=True,
         text=True,
         timeout=300,
+        creationflags=NO_WINDOW,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg could not convert the voice clip: {proc.stderr.strip()[-500:]}")
@@ -378,6 +379,7 @@ def loudness_normalize(src: Path, dst: Path, ffmpeg: str) -> None:
         capture_output=True,
         text=True,
         timeout=600,
+        creationflags=NO_WINDOW,
     )
     stats = _loudnorm_stats(probe.stderr)
     if stats is None or stats["input_i"] in ("-inf", "inf"):  # silent track: nothing to normalize
@@ -399,6 +401,7 @@ def loudness_normalize(src: Path, dst: Path, ffmpeg: str) -> None:
         capture_output=True,
         text=True,
         timeout=600,
+        creationflags=NO_WINDOW,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg loudness pass failed: {proc.stderr.strip()[-500:]}")

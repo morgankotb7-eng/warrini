@@ -50,6 +50,18 @@ Edit one step and render again: the voice of every unchanged step comes from the
 
 ## Quick start
 
+### Windows: one installer
+
+Download **Warrini-Setup** from the [latest release](https://github.com/morgankotb7-eng/warrini/releases/latest),
+double-click it, and open **ورّيني** from the Start menu or the desktop. Python, ffmpeg and the local
+Egyptian voice are inside; nothing else to install, and no admin rights needed.
+
+The installer is not code-signed yet, so Windows may show "Windows protected your PC". Click
+**More info** → **Run anyway**. The first time you listen to a step or make a video, the voice model
+downloads once (about 2 GB).
+
+### Any OS, with Python
+
 You need **Python 3.11+** and **ffmpeg with libass** (`warrini doctor` checks it for you).
 
 ```bash

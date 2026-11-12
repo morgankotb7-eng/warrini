@@ -33,5 +33,6 @@
 <symbol id="text" viewBox="0 0 24 24"><g class="s"><path d="M5 6h14M12 6v13M9 19h6"/></g></symbol>
 <symbol id="sparkle" viewBox="0 0 24 24"><g class="s"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/></g></symbol>
 <symbol id="eye" viewBox="0 0 24 24"><g class="s"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+<symbol id="power" viewBox="0 0 24 24"><g class="s"><path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></g></symbol>
 <symbol id="keyboard" viewBox="0 0 24 24"><g class="s"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></g></symbol>
 </svg>

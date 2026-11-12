@@ -13,9 +13,7 @@ from dataclasses import dataclass, field
 from importlib.resources import as_file, files
 from pathlib import Path
 
-from ehky import compose
-
-from . import captions, narrate, timeline
+from . import captions, narrate, system, timeline
 from .consts import FPS, FRAME_H, FRAME_W
 from .frames import frames
 from .guide import GuideError, check_renderable, clean
@@ -49,11 +47,10 @@ class Result:
 
 
 def tools() -> tuple[str, str]:
-    try:
-        ffmpeg, ffprobe = compose.require_tools()
-    except RuntimeError as exc:
-        raise RenderError("ffmpeg مش متسطب. شغّل «warrini doctor» عشان تعرف تسطّبه إزاي.", str(exc)) from exc
-    if not compose.has_libass(ffmpeg):
+    ffmpeg, ffprobe = system.find_tools()
+    if not ffmpeg or not ffprobe:
+        raise RenderError("ffmpeg مش متسطب. شغّل «warrini doctor» عشان تعرف تسطّبه إزاي.", "ffmpeg/ffprobe not on PATH")
+    if not system.has_libass(ffmpeg):
         raise RenderError(
             "نسخة ffmpeg اللي عندك مش بتعرف تكتب نص على الفيديو (ناقصها libass). شغّل «warrini doctor».",
             ffmpeg,
@@ -244,7 +241,14 @@ def render(
         started = time.monotonic()
         written = 0
         with open(log_path, "wb") as errlog:
-            proc = subprocess.Popen(args, cwd=work, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=errlog)
+            proc = subprocess.Popen(
+                args,
+                cwd=work,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=errlog,
+                creationflags=system.NO_WINDOW,
+            )
             try:
                 for data in frames(guide, snap, segments, scale, cancelled):
                     try:

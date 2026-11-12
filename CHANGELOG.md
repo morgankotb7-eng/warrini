@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1 — 2026-11-12
+
+- Windows installer (`Warrini-Setup-<version>.exe`): Python, the local Egyptian voice and ffmpeg are
+  bundled. No admin rights needed; Start menu and desktop shortcuts; clean uninstall.
+- One copy per user: opening Warrini again brings back the running one.
+- "Close Warrini" button in the app.
+- No console windows flash on Windows while rendering.
+- The `voicetut` extra now installs the whole voice stack (VoiceTut-TTS, OmniVoice, PyTorch).
+
 ## 0.1.0 — 2026-11-12
 
 First release.

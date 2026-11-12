@@ -25,7 +25,6 @@ import socket
 import subprocess
 import sys
 import threading
-import time
 import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,9 +32,9 @@ from importlib.resources import files
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from ehky import compose, tts
+from ehky import tts
 
-from . import __version__, layers, narrate, render
+from . import __version__, layers, narrate, render, system
 from .guide import ConflictError, GuideError, Store, check_renderable, clean, new_id, parse_steps, write_atomic
 from .timeline import estimate_seconds
 
@@ -98,6 +97,7 @@ class App:
         self.narrator = narrator or narrate.Narrator(ffmpeg=shutil.which("ffmpeg") or "ffmpeg")
         self.job = Job()
         self.page = WEB.joinpath("index.html").read_text(encoding="utf-8")
+        self.stop = lambda: None  # set by serve(): shuts the server down
 
     # ------------------------------------------------------------------ status
 
@@ -107,7 +107,7 @@ class App:
         return {
             "version": __version__,
             "ffmpeg": bool(ffmpeg),
-            "libass": bool(ffmpeg) and compose.has_libass(ffmpeg),
+            "libass": bool(ffmpeg) and system.has_libass(ffmpeg),
             "voicetut": voicetut,
             "speakers": tts.VOICETUT_SPEAKERS,
             "edge_voices": tts.EDGE_VOICES,
@@ -467,6 +467,11 @@ def make_handler(app: App):
                 steps = parse_steps(str(self._json_body().get("text", "")))
                 self._json(HTTPStatus.OK, {"steps": steps})
                 return
+            if path == "/api/shutdown":
+                app.job.cancel.set()
+                self._json(HTTPStatus.OK, {"ok": True})
+                threading.Thread(target=app.stop, daemon=True).start()
+                return
             if path == "/api/job/cancel":
                 app.job.cancel.set()
                 self._json(HTTPStatus.OK, app.job.snapshot())
@@ -614,14 +619,22 @@ def free_port(preferred: int) -> int:
 
 
 def serve(root: Path, port: int = DEFAULT_PORT, open_browser: bool = True) -> None:
+    already = system.existing_instance()
+    if already:  # one copy per user: just bring the open one back
+        if open_browser:
+            webbrowser.open(already)
+        print(f"ورّيني شغال بالفعل: {already}")
+        return
     port = free_port(port)
     app = App(root, port)
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(app))
     server.daemon_threads = True
+    app.stop = server.shutdown
     url = f"http://127.0.0.1:{port}/launch?code={app.launch_code}"
+    system.write_running(url, port)
     print(f"ورّيني شغال: {url}")
     print(f"الأدلة محفوظة في: {app.store.root}")
-    print("اقفل البرنامج بـ Ctrl+C")
+    print("اقفل البرنامج من زرار «اقفل البرنامج» أو بـ Ctrl+C")
     if open_browser:
         threading.Timer(0.4, lambda: webbrowser.open(url)).start()
     try:
@@ -630,6 +643,8 @@ def serve(root: Path, port: int = DEFAULT_PORT, open_browser: bool = True) -> No
         print("\nتمام، قفلت.")
     finally:
         app.job.cancel.set()
+        if app.job.thread is not None:
+            app.job.thread.join(30)
         server.server_close()
         app.narrator.close()
-        time.sleep(0.1)
+        system.clear_running()

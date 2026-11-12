@@ -82,12 +82,12 @@ def header(theme_name: str) -> str:
         f"Style: Caption,{FONT},{CAPTION_SIZE},{text},{text},{box},{dark},-1,0,0,0,100,100,0,0,3,16,0,2,"
         f"{CAPTION_MARGIN},{CAPTION_MARGIN},52,-1",
         f"Style: Title,{FONT},100,{text},{text},{dark},{shadow},-1,0,0,0,100,100,0,0,1,0,3,5,160,160,0,-1",
-        f"Style: TitleSub,{FONT},52,{muted},{muted},{dark},{dark},0,0,0,0,100,100,0,0,1,0,0,5,160,160,0,-1",
-        f"Style: StepLabel,{FONT},40,{text},{text},{dark},{shadow},-1,0,0,0,100,100,0,0,1,0,2,6,0,0,0,-1",
+        f"Style: TitleSub,{FONT},56,{muted},{muted},{dark},{dark},0,0,0,0,100,100,0,0,1,0,0,5,160,160,0,-1",
+        f"Style: StepLabel,{FONT},42,{text},{text},{dark},{shadow},-1,0,0,0,100,100,0,0,1,0,2,6,0,0,0,-1",
         f"Style: BadgeDisc,{FONT},20,{accent},{accent},{dark},{dark},0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,-1",
         f"Style: BadgeNum,{FONT},46,{ass_colour(t['bg0'])},{ass_colour(t['bg0'])},{dark},{dark},-1,0,0,0,100,100,0,0,"
         f"1,0,0,5,0,0,0,-1",
-        f"Style: Kicker,{FONT},40,{accent},{accent},{dark},{dark},-1,0,0,0,100,100,0,0,1,0,0,5,160,160,0,-1",
+        f"Style: Kicker,{FONT},46,{accent},{accent},{dark},{dark},-1,0,0,0,100,100,0,0,1,0,0,5,160,160,0,-1",
         f"Style: CardText,{FONT},64,{text},{text},{dark},{dark},-1,0,0,0,100,100,0,0,1,0,0,5,260,260,0,-1",
     ]
     return (

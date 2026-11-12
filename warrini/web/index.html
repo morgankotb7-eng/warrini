@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="warrini-token" content="{{TOKEN}}">
+<meta name="color-scheme" content="light">
+<title>ورّيني</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+<a class="skip" href="#main">روح للمحتوى</a>
+<header class="topbar">
+  <button class="brand" id="go-home" type="button" aria-label="الصفحة الرئيسية">
+    <span class="brand-mark" aria-hidden="true"><svg><use href="/static/icons.svg#logo"></use></svg></span>
+    <span class="brand-name">ورّيني</span>
+  </button>
+  <nav class="crumbs" id="crumbs" aria-label="مكانك"></nav>
+  <div class="topbar-end">
+    <span class="save-state" id="save-state" role="status" aria-live="polite"></span>
+    <span class="privacy" id="privacy" hidden></span>
+    <button class="btn btn-primary" id="make-video" type="button" hidden>
+      <svg aria-hidden="true"><use href="/static/icons.svg#film"></use></svg><span>اعمل الفيديو</span>
+    </button>
+  </div>
+</header>
+<div class="banner" id="health" role="alert" hidden></div>
+<main id="main" tabindex="-1"></main>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="modal-root" id="modal-root"></div>
+<template id="tpl-version">{{VERSION}}</template>
+<script src="/static/app.js"></script>
+</body>
+</html>

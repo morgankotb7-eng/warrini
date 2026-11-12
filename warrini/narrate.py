@@ -71,6 +71,8 @@ def default_cache_dir() -> Path:
 
 def choose_engine(voice: dict, voicetut_ok: bool | None = None) -> str:
     """Resolve the engine for a guide. Online use needs the guide's explicit opt-in."""
+    if os.environ.get("WARRINI_VOICE") == "fake":  # tests and demos: silent clips, no voice model
+        return "fake"
     ok = tts.voicetut_available() if voicetut_ok is None else voicetut_ok
     engine = voice.get("engine", "auto")
     online = bool(voice.get("allow_online"))

@@ -136,8 +136,8 @@ jobs:
           for ($i = 0; $i -lt 60 -and -not (Test-Path $running); $i++) { Start-Sleep 1 }
           if (-not (Test-Path $running)) { Get-Content "$env:LOCALAPPDATA\Warrini\warrini.log" -ErrorAction SilentlyContinue; throw "app did not start" }
           $url = (Get-Content $running | ConvertFrom-Json).url
-          $r = Invoke-WebRequest $url -MaximumRedirection 0 -SkipHttpErrorCheck
-          if ($r.StatusCode -ne 303) { throw "launch returned $($r.StatusCode)" }
+          $code = curl.exe -s -o NUL -w "%{http_code}" $url
+          if ($code -ne "303") { throw "launch returned $code" }
           Get-Process pythonw -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep 2
           Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES" -Wait

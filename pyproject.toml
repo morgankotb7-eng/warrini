@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "warrini"
+dynamic = ["version"]
+description = "Turn written work procedures and screenshots into narrated how-to videos with an Egyptian Arabic voice. Free, local, open source."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Mohamed Kotb" }]
+keywords = ["arabic", "egyptian", "sop", "how-to", "video", "tutorial", "text-to-speech", "ffmpeg"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "Topic :: Multimedia :: Video",
+  "Natural Language :: Arabic",
+]
+dependencies = [
+  "ehky @ git+https://github.com/morgankotb7-eng/ehky@v0.2.0",
+  "Pillow>=10.1,<14",
+]
+
+[project.optional-dependencies]
+voicetut = ["ehky[voicetut] @ git+https://github.com/morgankotb7-eng/ehky@v0.2.0"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.urls]
+Homepage = "https://github.com/morgankotb7-eng/warrini"
+
+[project.scripts]
+warrini = "warrini.cli:main"
+
+[tool.setuptools]
+packages = ["warrini"]
+
+[tool.setuptools.package-data]
+warrini = ["web/*", "assets/fonts/*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "warrini.__version__" }
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["render: needs ffmpeg with libass"]

@@ -1,0 +1,19 @@
+{
+  "frame": {"w": 1920, "h": 1080, "fps": 30},
+  "card": {"x0": 180, "y0": 125, "x1": 1740, "y1": 905, "radius": 18,
+           "shadow": {"dx": 0, "dy": 12, "blur": 28, "alpha": 0.4}},
+  "camera": {"pad": 0.18, "zmax": 2.4, "move": 1.2, "zoom_out": 0.6},
+  "ring": {"outset": 10, "radius": 14, "stroke": 6, "scale_from": 1.12, "appear": 0.4, "fade_out": 0.2},
+  "spotlight": {"alpha": 0.35},
+  "progress": {"y0": 1074, "h": 6},
+  "timing": {"lead_in": 0.5, "card_lead_in": 0.4, "card_tail": 0.8, "min_tail": 0.6, "fade": 0.35,
+             "title_min": 2.5, "end_silent": 2.0, "chars_per_second": 13.0},
+  "limits": {"title": 120, "intro": 400, "outro": 300, "step_text": 600, "steps": 60, "redact": 20,
+             "pause_min": 0.2, "pause_max": 3.0, "min_rect": 0.01, "image_mb": 25, "image_mp": 50},
+  "themes": {
+    "navy":     {"bg0": "#0b1630", "bg1": "#16294f", "accent": "#f5c845", "text": "#ffffff", "muted": "#a9b7d6", "caption_box": "#0b1630"},
+    "charcoal": {"bg0": "#141414", "bg1": "#2a2a2e", "accent": "#4fd1c5", "text": "#ffffff", "muted": "#b5b5bd", "caption_box": "#141414"},
+    "forest":   {"bg0": "#0d2a20", "bg1": "#1d4a39", "accent": "#f2b134", "text": "#ffffff", "muted": "#b3d1c4", "caption_box": "#0d2a20"},
+    "sand":     {"bg0": "#f3ead9", "bg1": "#e2d3b5", "accent": "#c2410c", "text": "#1f1a14", "muted": "#5b5040", "caption_box": "#fbf6ec"}
+  }
+}

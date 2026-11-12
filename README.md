@@ -14,6 +14,9 @@ Free and open source. Runs on your machine. No account, no API key, nothing uplo
 
 <img src="docs/editor.png" alt="The Warrini editor: steps on the right, the screenshot with a focus box and a covered area in the middle, the step text on the left" width="860">
 
+
+▶️ [Watch a 37-second example](docs/demo.mp4), made by Warrini from `examples/vpn-password` with the local Egyptian voice.
+
 </div>
 
 ## The problem

@@ -83,7 +83,8 @@ def target_view(focus: Rect | None, card: Rect) -> Rect:
         ph = pw / ASPECT
     zoom = min(max(FRAME_W / pw, 1.0), CAM["zmax"])
     vw, vh = FRAME_W / zoom, FRAME_H / zoom
-    return _inside(Rect(focus.cx - vw / 2, focus.cy - vh / 2, vw, vh), FULL)
+    view = Rect(focus.cx - vw / 2, focus.cy - vh / 2, vw, vh)
+    return _inside(_inside(view, card), FULL)  # stay on the screenshot when it is big enough
 
 
 def _inside(view: Rect, bounds: Rect) -> Rect:

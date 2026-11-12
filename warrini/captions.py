@@ -83,7 +83,7 @@ def header(theme_name: str) -> str:
         f"{CAPTION_MARGIN},{CAPTION_MARGIN},52,-1",
         f"Style: Title,{FONT},100,{text},{text},{dark},{shadow},-1,0,0,0,100,100,0,0,1,0,3,5,160,160,0,-1",
         f"Style: TitleSub,{FONT},56,{muted},{muted},{dark},{dark},0,0,0,0,100,100,0,0,1,0,0,5,160,160,0,-1",
-        f"Style: StepLabel,{FONT},42,{text},{text},{dark},{shadow},-1,0,0,0,100,100,0,0,1,0,2,6,0,0,0,-1",
+        f"Style: StepLabel,{FONT},40,{text},{text},{box},{dark},-1,0,0,0,100,100,0,0,3,10,0,6,0,0,0,-1",
         f"Style: BadgeDisc,{FONT},20,{accent},{accent},{dark},{dark},0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,-1",
         f"Style: BadgeNum,{FONT},46,{ass_colour(t['bg0'])},{ass_colour(t['bg0'])},{dark},{dark},-1,0,0,0,100,100,0,0,"
         f"1,0,0,5,0,0,0,-1",
@@ -134,6 +134,8 @@ def build(
             add(1, start, end, "Title", f"{fade}{{\\pos(960,{420 if two else 465})}}{title}")
             count = RLM + steps_label(total_steps)
             add(1, start, end, "TitleSub", f"{fade}{{\\pos(960,600)}}{count}")
+            if guide.get("intro"):  # spoken text differs from the title on screen: caption it
+                caption_windows.append((start, end))
         elif seg.kind == "end":
             add(1, start, end, "Title", f"{fade}{{\\pos(960,520)}}{RLM}كده خلصت")
             add(1, start, end, "TitleSub", f"{fade}{{\\pos(960,620)}}{wrap(guide['title'], 48, 1)}")
@@ -173,5 +175,10 @@ def srt(cues: list[tuple[float, float, str]]) -> str:
         s, ms = divmod(rem, 1000)
         return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
-    blocks = [f"{i}\n{stamp(a)} --> {stamp(b + 0.35)}\n{RLM}{text}\n" for i, (a, b, text) in enumerate(cues, 1)]
+    blocks = []
+    for i, (a, b, text) in enumerate(cues, 1):
+        end = b + 0.35
+        if i < len(cues):
+            end = min(end, cues[i][0])  # never overlap the next cue
+        blocks.append(f"{i}\n{stamp(a)} --> {stamp(end)}\n{RLM}{text}\n")
     return "﻿" + "\n".join(blocks)

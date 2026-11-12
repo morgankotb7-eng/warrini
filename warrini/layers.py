@@ -79,7 +79,8 @@ def redact(img: Image.Image, rects: list[dict], seed: int = 7) -> Image.Image:
         x0, y0, x1, y1 = geo.pixel_box(rect, width, height)
         if x1 <= x0 or y1 <= y0:
             continue
-        colour = _surround_colour(img, (x0, y0, x1, y1))
+        # a shade darker than its surroundings: reads as "covered", never as the original
+        colour = tuple(max(0, c - 14) for c in _surround_colour(img, (x0, y0, x1, y1)))
         radius = min(6, (x1 - x0) // 4, (y1 - y0) // 4)
         draw.rectangle((x0, y0, x1 - 1, y1 - 1), fill=colour)  # hard edges first: nothing leaks at corners
         if radius > 0 and (x1 - x0) > 24 and (y1 - y0) > 12:

@@ -9,7 +9,9 @@ from pathlib import Path
 
 
 def main() -> int:
-    from warrini import narrate
+    from warrini import narrate, system
+
+    system.use_bundled_ffmpeg()  # same as the app does at start
 
     started = time.monotonic()
     with tempfile.TemporaryDirectory() as tmp:

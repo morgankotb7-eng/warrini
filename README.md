@@ -58,7 +58,7 @@ Egyptian voice are inside; nothing else to install, and no admin rights needed.
 
 The installer is not code-signed yet, so Windows may show "Windows protected your PC". Click
 **More info** → **Run anyway**. The first time you listen to a step or make a video, the voice model
-downloads once (about 2 GB).
+downloads once (about 3 GB).
 
 ### Any OS, with Python
 
@@ -73,7 +73,7 @@ Your browser opens on the editor. Guides are saved in `~/Warrini` (one folder pe
 
 ### The local Egyptian voice
 
-The voice runs on your machine, so it needs PyTorch and a one-time model download (about 2 GB):
+The voice runs on your machine, so it needs PyTorch and a one-time model download (about 3 GB):
 
 ```bash
 pip install "warrini[voicetut] @ git+https://github.com/morgankotb7-eng/warrini"
@@ -83,7 +83,7 @@ It is not fast on a plain CPU: loading the model takes a couple of minutes, then
 a minute per step (a GPU is much faster). Each step's voice is made once and cached, so editing one
 step and rendering again only waits for that step.
 
-Don't want the 2 GB? Open the guide's **Guide** tab and turn on **Allow the online voice**. That
+Don't want the 3 GB? Open the guide's **Guide** tab and turn on **Allow the online voice**. That
 uses Microsoft's free Egyptian voice: faster, but the step text is sent to Microsoft. Screenshots
 and the video still never leave your machine. Warrini never goes online unless a guide says so.
 

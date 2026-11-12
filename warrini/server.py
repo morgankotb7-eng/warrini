@@ -421,6 +421,9 @@ def make_handler(app: App):
                 items.sort(key=lambda s: s["updated_at"], reverse=True)
                 self._json(HTTPStatus.OK, {"guides": items})
                 return
+            if path == "/api/voice-status":
+                self._json(HTTPStatus.OK, app.narrator.voice_status())
+                return
             if path == "/api/job":
                 self._json(HTTPStatus.OK, app.job.snapshot())
                 return
@@ -637,6 +640,9 @@ def serve(root: Path, port: int = DEFAULT_PORT, open_browser: bool = True) -> No
     print("اقفل البرنامج من زرار «اقفل البرنامج» أو بـ Ctrl+C")
     if open_browser:
         threading.Timer(0.4, lambda: webbrowser.open(url)).start()
+    if tts.voicetut_available() and os.environ.get("WARRINI_VOICE") != "fake":
+        # get the local voice ready in the background (first run: downloads the model once)
+        threading.Thread(target=app.narrator.worker.warm, name="warrini-voice-warm", daemon=True).start()
     try:
         server.serve_forever(poll_interval=0.3)
     except KeyboardInterrupt:

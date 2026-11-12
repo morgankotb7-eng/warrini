@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 — 2026-11-13
+
+- The local voice gets ready in the background as soon as Warrini opens.
+- The first-run model download (about 3 GB) now shows live progress in the top bar, then
+  "getting ready"; the same status shows while a video waits for its voice.
+- Fixed the settings column getting cut off on smaller or zoomed screens.
+
 ## 0.1.1 — 2026-11-12
 
 - Windows installer (`Warrini-Setup-<version>.exe`): Python, the local Egyptian voice and ffmpeg are

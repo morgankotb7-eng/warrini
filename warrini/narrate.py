@@ -11,6 +11,7 @@ Every clip is stored as 48 kHz mono 16-bit WAV next to a JSON file with word tim
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import multiprocessing as mp
@@ -150,15 +151,21 @@ def _worker_main(requests, results) -> None:  # pragma: no cover - runs in a chi
         job = requests.get()
         if job is None:
             return
-        chunks, speaker, out = job
         try:
             if model is None:
                 from huggingface_hub import snapshot_download
                 from voicetut_tts import VoiceTutTTS
 
+                results.put(("phase", "download"))
                 local = snapshot_download(VOICETUT_REPO, revision=VOICETUT_REVISION)
+                results.put(("phase", "load"))  # loading also fetches the audio tokenizer the first time
                 model = VoiceTutTTS.from_pretrained(local)
                 results.put(("loaded", None))
+            if job == "warm":
+                results.put(("done", []))
+                continue
+            chunks, speaker, out = job
+            results.put(("phase", "speak"))
             durations = []
             with tempfile.TemporaryDirectory(prefix="warrini-vt-") as tmp, wave.open(out, "wb") as dst:
                 for i, chunk in enumerate(chunks):
@@ -179,6 +186,41 @@ def _worker_main(requests, results) -> None:  # pragma: no cover - runs in a chi
             results.put(("error", f"{type(exc).__name__}: {exc}"))
 
 
+# the model files fetched the first time (VoiceTut + the OmniVoice audio tokenizer), about 3.2 GB
+VOICE_REPOS = ("models--mohammedaly22--VoiceTut-TTS", "models--eustlb--higgs-audio-v2-tokenizer")
+VOICE_DOWNLOAD_MB = 3200
+
+
+def hf_hub_dir() -> Path:
+    if os.environ.get("HF_HUB_CACHE"):
+        return Path(os.environ["HF_HUB_CACHE"])
+    home = os.environ.get("HF_HOME") or str(Path.home() / ".cache" / "huggingface")
+    return Path(home) / "hub"
+
+
+def voice_bytes_on_disk() -> int:
+    """How much of the voice model is downloaded so far, partial files included.
+
+    Snapshot entries are often links to shared blob files: each real file is counted once.
+    """
+    seen: set[str] = set()
+    total = 0
+    for repo in VOICE_REPOS:
+        root = hf_hub_dir() / repo
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            try:
+                real = os.path.realpath(path)
+                if real in seen or not os.path.isfile(real):
+                    continue
+                seen.add(real)
+                total += os.path.getsize(real)
+            except OSError:
+                continue
+    return total
+
+
 class VoiceTutWorker:
     """One model in memory for the whole session. Thread-safe; one request at a time."""
 
@@ -187,6 +229,9 @@ class VoiceTutWorker:
         self._proc = None
         self._requests = None
         self._results = None
+        self.phase = "idle"  # idle | download | load | ready | speak | error
+        self.error = ""
+        self.loaded = False
 
     def _ensure(self) -> None:
         if self._proc is not None and self._proc.is_alive():
@@ -199,11 +244,18 @@ class VoiceTutWorker:
     def stop(self) -> None:
         proc = self._proc
         self._proc = None
+        self.loaded = False
+        self.phase = "idle"
         if proc is not None and proc.is_alive():
             proc.terminate()
             proc.join(5)
             if proc.is_alive():
                 proc.kill()
+
+    def warm(self) -> None:
+        """Download and load the model ahead of time, so the first «Listen» is quick."""
+        with contextlib.suppress(Exception):  # the status already holds any error
+            self._run("warm", None, lambda: False, lambda *_: None)
 
     def synthesize(
         self,
@@ -213,28 +265,40 @@ class VoiceTutWorker:
         cancelled: Callable[[], bool],
         progress: Callable[[str, float], None],
     ) -> list[float]:
+        return self._run((chunks, speaker, str(out)), len(chunks), cancelled, progress)
+
+    def _run(self, job, count, cancelled, progress) -> list[float]:
         with self._lock:
             self._ensure()
-            self._requests.put((chunks, speaker, str(out)))
+            self._requests.put(job)
             while True:
                 if cancelled():
                     self.stop()
                     raise Cancelled
                 if not self._proc.is_alive():
                     self._proc = None
-                    raise RuntimeError("الصوت المحلي وقف فجأة (ممكن الذاكرة مش كفاية)")
+                    self.phase, self.error = "error", "الصوت المحلي وقف فجأة (ممكن الذاكرة مش كفاية)"
+                    self.loaded = False
+                    raise RuntimeError(self.error)
                 try:
                     kind, value = self._results.get(timeout=0.25)
                 except queue.Empty:
                     continue
-                if kind == "loaded":
+                if kind == "phase":
+                    if value == "speak" or not self.loaded:
+                        self.phase = value
+                elif kind == "loaded":
+                    self.loaded = True
+                    self.phase = "ready"
                     progress("loaded", 0)
                 elif kind == "chunk":
-                    progress("chunk", value / len(chunks))
+                    progress("chunk", value / (count or 1))
                 elif kind == "done":
+                    self.phase = "ready"
                     return value
                 else:
-                    raise RuntimeError(f"الصوت المحلي فشل: {value}")
+                    self.phase, self.error = "error", f"الصوت المحلي فشل: {value}"
+                    raise RuntimeError(self.error)
 
 
 # --------------------------------------------------------------------------- narrator
@@ -340,6 +404,13 @@ class Narrator:
             total -= size
             removed += 1
         return removed
+
+    def voice_status(self) -> dict:
+        w = self.worker
+        info = {"phase": w.phase, "error": w.error, "total_mb": VOICE_DOWNLOAD_MB, "downloaded_mb": None}
+        if w.phase in ("download", "load"):
+            info["downloaded_mb"] = round(voice_bytes_on_disk() / 1048576)
+        return info
 
     def close(self) -> None:
         self.worker.stop()

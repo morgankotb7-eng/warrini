@@ -1,3 +1,4 @@
+import contextlib
 import shutil
 import subprocess
 import wave
@@ -147,3 +148,23 @@ def test_loudness_normalize(tmp_path):
     nr.write_silence(silent, 1.0)
     nr.loudness_normalize(silent, tmp_path / "s2.wav", FFMPEG)
     assert nr.wav_duration(tmp_path / "s2.wav") == pytest.approx(1.0)
+
+
+def test_voice_bytes_counts_each_real_file_once(tmp_path, monkeypatch):
+    monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path))
+    repo = tmp_path / nr.VOICE_REPOS[0]
+    (repo / "blobs").mkdir(parents=True)
+    (repo / "snapshots" / "abc").mkdir(parents=True)
+    (repo / "blobs" / "big").write_bytes(b"x" * 1000)
+    (repo / "blobs" / "part.incomplete").write_bytes(b"y" * 500)
+    with contextlib.suppress(OSError):  # Windows without symlink rights: Hugging Face copies instead
+        (repo / "snapshots" / "abc" / "model.safetensors").symlink_to(repo / "blobs" / "big")
+    assert nr.voice_bytes_on_disk() == 1500
+
+
+def test_voice_status_reports_progress_only_while_preparing(tmp_path):
+    narrator = nr.Narrator(cache_dir=tmp_path)
+    assert narrator.voice_status()["downloaded_mb"] is None
+    narrator.worker.phase = "download"
+    status = narrator.voice_status()
+    assert status["phase"] == "download" and status["downloaded_mb"] is not None and status["total_mb"] == 3200

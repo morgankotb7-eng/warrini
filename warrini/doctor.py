@@ -46,7 +46,7 @@ def run() -> int:
             f"{WARN} الصوت المصري المحلي مش متسطب. تقدر تسطّبه مرة واحدة:\n"
             '    pip install "warrini[voicetut] @ git+https://github.com/morgankotb7-eng/warrini"\n'
             "  على Windows أسهل طريقة برنامج التسطيب من صفحة الـ Releases (الصوت جاهز فيه).\n"
-            "  أول مرة بينزّل الموديل (حوالي 2 جيجا). لو الشبكة وراها proxy، ظبط HTTPS_PROXY.\n"
+            "  أول مرة بينزّل الموديل (حوالي 3 جيجا). لو الشبكة وراها proxy، ظبط HTTPS_PROXY.\n"
             "  أو استخدم الصوت الأونلاين من إعدادات الدليل (بيبعت النص لـ Microsoft)."
         )
     print("كله تمام، شغّل: warrini" if not problems else f"فيه {problems} مشكلة لازم تتحل الأول.")

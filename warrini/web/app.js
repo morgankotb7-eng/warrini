@@ -235,6 +235,48 @@ function renderPrivacy() {
   el.hidden = false;
 }
 
+/* ------------------------------------------------------------------ voice readiness */
+
+let voiceTimer = 0;
+function voiceText(v) {
+  if (v.phase === "download" || v.phase === "load") {
+    const done = v.downloaded_mb || 0;
+    if (done < v.total_mb * 0.97) return `الصوت المصري بينزل أول مرة: ${done} من ${v.total_mb} ميجا`;
+    return "الصوت المصري بيتجهّز…";
+  }
+  if (v.phase === "speak") return "طارق بيسجّل…";
+  if (v.phase === "error") return "الصوت فيه مشكلة";
+  return "";
+}
+
+async function pollVoice() {
+  clearTimeout(voiceTimer);
+  if (!state.status || !state.status.voicetut) return;
+  let v;
+  try { v = await api("GET", "/api/voice-status"); } catch { voiceTimer = setTimeout(pollVoice, 4000); return; }
+  state.voice = v;
+  const pill = $("#voice-pill");
+  const text = voiceText(v);
+  if (!text) {
+    pill.hidden = true;
+  } else {
+    pill.className = `voice-pill${v.phase === "error" ? " err" : ""}`;
+    const kids = [h("span", { class: "spinner" }), text];
+    if (v.phase === "error") { kids[0] = icon("alert"); pill.title = v.error; }
+    if ((v.phase === "download" || v.phase === "load") && v.downloaded_mb != null) {
+      const bar = h("i");
+      bar.style.width = `${Math.min(100, Math.round((100 * v.downloaded_mb) / v.total_mb))}%`;
+      kids.push(h("span", { class: "mini", "aria-hidden": "true" }, bar));
+    }
+    pill.replaceChildren(...kids);
+    pill.hidden = false;
+  }
+  const lbl = document.querySelector(".listen .btn .voice-wait");
+  if (lbl) lbl.textContent = text || "بيجهّز الصوت…";
+  const busy = ["download", "load", "speak"].includes(v.phase);
+  voiceTimer = setTimeout(pollVoice, busy ? 1500 : 6000);
+}
+
 /* ------------------------------------------------------------------ router */
 
 function route() {
@@ -1101,9 +1143,10 @@ function listenBlock(step) {
   heights.forEach((v, k) => { const bar = h("i"); bar.style.height = `${v}px`; bar.style.animationDelay = `${(k % 7) * 90}ms`; bars.append(bar); });
   const playing = state.audio && state.audio.stepId === step.id;
   if (playing) bars.classList.add(state.audio.loading ? "loading" : "playing");
-  const label = playing ? (state.audio.loading ? "بيجهّز الصوت…" : "وقّف") : "اسمع";
+  const waiting = playing && state.audio.loading;
+  const label = waiting ? h("span", { class: "voice-wait" }, (state.voice && voiceText(state.voice)) || "بيجهّز الصوت…") : playing ? "وقّف" : "اسمع";
   const btn = h("button", { class: "btn", type: "button", disabled: !step.text.trim(), onclick: () => (playing ? stopAudio() : listen(step)) },
-    playing && state.audio.loading ? h("span", { class: "spinner" }) : icon(playing ? "stop" : "play"), label);
+    waiting ? h("span", { class: "spinner" }) : icon(playing ? "stop" : "play"), label);
   return h("div", { class: "field" }, h("span", { class: "label" }, "الصوت"), h("div", { class: "listen" }, btn, bars),
     !state.status.voicetut && !state.guide.voice.allow_online ? h("div", { class: "help" }, "عشان تسمع، سطّب الصوت المحلي أو فعّل الصوت الأونلاين من تبويب «الدليل».") : null);
 }
@@ -1112,7 +1155,8 @@ async function listen(step) {
   stopAudio();
   state.audio = { stepId: step.id, loading: true, el: null };
   renderEditor(true);
-  const slow = setTimeout(() => { if (state.audio && state.audio.loading) toast("أول مرة الصوت المصري بيجهّز نفسه (ولو أول تشغيل خالص بينزّل حوالي 2 جيجا مرة واحدة). استنى شوية…", { ms: 12000 }); }, 4000);
+  pollVoice();
+  const slow = setTimeout(() => { if (state.audio && state.audio.loading) toast("أول مرة بس: الصوت المصري بينزل (حوالي 3 جيجا) ويتجهّز. التقدّم ظاهر فوق. بعد كده بيشتغل على طول ومن غير نت.", { ms: 12000 }); }, 3000);
   try {
     const res = await api("POST", `/api/guides/${state.slug}/voice`, { text: step.text });
     clearTimeout(slow);
@@ -1266,7 +1310,9 @@ function progressModal(initial) {
     bar.style.width = `${job.percent}%`;
     bar.parentElement.setAttribute("aria-valuenow", String(Math.round(job.percent)));
     pct.textContent = `${Math.round(job.percent)}%`;
-    eta.textContent = job.eta != null ? `فاضل حوالي ${fmtDuration(job.eta)}` : job.stage === "voice" ? "بيجهّز الصوت…" : "";
+    const voiceNow = state.voice ? voiceText(state.voice) : "";
+    eta.textContent = job.eta != null ? `فاضل حوالي ${fmtDuration(job.eta)}` : job.stage === "voice" ? voiceNow || "بيجهّز الصوت…" : "";
+    if (job.stage === "voice" || job.stage === "prepare") pollVoice();
   };
   if (initial) update(initial);
   const poll = async () => {
@@ -1395,4 +1441,5 @@ window.addEventListener("hashchange", route);
     return;
   }
   route();
+  pollVoice();
 })();

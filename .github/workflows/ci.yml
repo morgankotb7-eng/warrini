@@ -63,7 +63,9 @@ jobs:
       - name: Install Warrini
         run: pip install ".[dev]"
       - name: Doctor
-        run: warrini doctor
+        shell: bash
+        # exits 2 when ffmpeg lacks libass (Homebrew's default build); the next steps cover that case
+        run: warrini doctor || test $? -eq 2
       - name: Tests
         run: python -m pytest -q -rs
       - name: Render the example guide (silent voice)

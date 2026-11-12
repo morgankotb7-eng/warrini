@@ -154,10 +154,11 @@ def test_srt_format():
 
 
 def test_ffmpeg_args_are_relative_and_complete():
-    args = render.ffmpeg_args("ffmpeg", 320, 180, 23, 12.5, render.Path("/abs/out.mp4.part"))
+    target = render.Path("/abs/out.mp4.part")
+    args = render.ffmpeg_args("ffmpeg", 320, 180, 23, 12.5, target)
     joined = " ".join(args)
     assert "ass=filename=subs.ass:fontsdir=fonts" in joined
-    assert "-s 320x180" in joined and "-t 12.500" in joined and args[-1] == "/abs/out.mp4.part"
+    assert "-s 320x180" in joined and "-t 12.500" in joined and args[-1] == str(target)
 
 
 @needs_libass

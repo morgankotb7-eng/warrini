@@ -187,7 +187,7 @@ def render(
 
     report("prepare", 0)
     out.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="warrini-render-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="warrini-render-", ignore_cleanup_errors=True) as tmp:
         work = Path(tmp)
         snap = _snapshot(guide, folder, work)
 
@@ -262,10 +262,10 @@ def render(
                 code = proc.wait(timeout=600)
             except BaseException:
                 _stop(proc)
-                part.unlink(missing_ok=True)
+                _remove(part)
                 raise
         if code != 0 or written != total:
-            part.unlink(missing_ok=True)
+            _remove(part)
             raise RenderError("ffmpeg معرفش يكمّل الفيديو", _tail(log_path))
 
         report("finish", 99)
@@ -286,18 +286,38 @@ def _step_name(guide: dict, step_id: str) -> str:
 
 
 def _stop(proc: subprocess.Popen) -> None:
+    """Close ffmpeg's input and let it exit on its own first.
+
+    Killing it straight away is not enough on Windows: package-manager shims (Chocolatey)
+    start the real ffmpeg as a child, and only a clean end of input makes that child exit
+    and release the output file.
+    """
     try:
         if proc.stdin and not proc.stdin.closed:
             proc.stdin.close()
     except OSError:
         pass
-    if proc.poll() is None:
-        proc.terminate()
+    try:
+        proc.wait(15)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+    proc.terminate()
+    try:
+        proc.wait(5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(5)
+
+
+def _remove(path: Path, attempts: int = 25) -> None:
+    """Delete a file that a just-stopped process may still hold for a moment (Windows)."""
+    for _ in range(attempts):
         try:
-            proc.wait(5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait(5)
+            path.unlink(missing_ok=True)
+            return
+        except PermissionError:
+            time.sleep(0.2)
 
 
 def _tail(path: Path, chars: int = 2000) -> str:

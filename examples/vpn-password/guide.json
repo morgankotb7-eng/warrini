@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "title": "إزاي تغيّر باسورد الـ VPN",
+  "intro": "النهارده هنغيّر باسورد الـ VPN في أقل من دقيقة.",
+  "outro": "لو قابلتك أي مشكلة، كلّم الـ Service Desk وهنساعدك.",
+  "theme": "navy",
+  "voice": {
+    "engine": "auto",
+    "speaker": "Tareq",
+    "voice": "ar-EG-ShakirNeural",
+    "rate": "+0%",
+    "allow_online": false
+  },
+  "steps": [
+    {
+      "id": "c6275598-097d-4cbd-8fd9-9bf4ec37fd62",
+      "text": "افتح الـ Self-Service Portal من المتصفح، ومن الصفحة الرئيسية دوس على VPN Access.",
+      "image": "images/8a967cc0-ec5b-44d4-8ed0-5a9acb3d22ff.png",
+      "focus": {
+        "x": 0.4469,
+        "y": 0.2289,
+        "w": 0.2563,
+        "h": 0.1878
+      },
+      "redact": [],
+      "pause_after": 0.6
+    },
+    {
+      "id": "d7de0aa9-6f37-499d-80c2-f31774ecec58",
+      "text": "هتلاقي بيانات الحساب بتاعك. البيانات الشخصية متغطية. دوس على زرار Reset VPN password.",
+      "image": "images/c9177da7-e661-4999-8077-5defd6aeff50.png",
+      "focus": {
+        "x": 0.195,
+        "y": 0.6378,
+        "w": 0.175,
+        "h": 0.0622
+      },
+      "redact": [
+        {
+          "x": 0.346,
+          "y": 0.377,
+          "w": 0.22,
+          "h": 0.04
+        },
+        {
+          "x": 0.346,
+          "y": 0.446,
+          "w": 0.095,
+          "h": 0.04
+        }
+      ],
+      "pause_after": 0.6
+    },
+    {
+      "id": "bda411c4-869b-48f8-828a-083cd878bac6",
+      "text": "اكتب الباسورد الجديدة مرتين، ولازم تكون اتناشر حرف على الأقل، وبعدين دوس Update password.",
+      "image": "images/c20fdd0b-cd3d-46db-89ce-def24f6d74c3.png",
+      "focus": {
+        "x": 0.555,
+        "y": 0.7356,
+        "w": 0.1625,
+        "h": 0.0622
+      },
+      "redact": [],
+      "pause_after": 0.6
+    },
+    {
+      "id": "8d84b0ec-17bb-490e-880d-71a3345ce5f5",
+      "text": "هتظهرلك رسالة إن الباسورد اتغيرت. اقفل الـ VPN وافتحه تاني بالباسورد الجديدة.",
+      "image": "images/787850be-2ffa-4865-8399-0c81ce1a3de8.png",
+      "focus": {
+        "x": 0.3425,
+        "y": 0.67,
+        "w": 0.3775,
+        "h": 0.13
+      },
+      "redact": [],
+      "pause_after": 0.8
+    }
+  ],
+  "rev": 0,
+  "updated_at": "2026-11-12T00:00:00.000000Z"
+}

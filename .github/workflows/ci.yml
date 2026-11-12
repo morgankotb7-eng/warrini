@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+      - name: JavaScript syntax
+        run: node --check warrini/web/app.js
+
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install ffmpeg (Linux)
+        if: runner.os == 'Linux'
+        timeout-minutes: 8
+        run: |
+          # Static build with libass, hosted on GitHub (faster and more reliable than apt mirrors).
+          curl -fsSL --retry 3 -o ffmpeg.tar.xz \
+            https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
+          mkdir -p "$RUNNER_TEMP/ffmpeg"
+          tar -xJf ffmpeg.tar.xz -C "$RUNNER_TEMP/ffmpeg" --strip-components=1
+          rm ffmpeg.tar.xz
+          echo "$RUNNER_TEMP/ffmpeg/bin" >> "$GITHUB_PATH"
+      - name: Install ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 8
+        run: choco install ffmpeg -y --no-progress
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        timeout-minutes: 8
+        run: brew install ffmpeg
+      - name: Install Warrini
+        run: pip install ".[dev]"
+      - name: Doctor
+        run: warrini doctor
+      - name: Tests
+        run: python -m pytest -q -rs
+      - name: Render the example guide (silent voice)
+        shell: bash
+        env:
+          WARRINI_VOICE: fake
+        run: |
+          if python -c "import shutil,sys; from ehky.compose import has_libass; sys.exit(0 if has_libass(shutil.which('ffmpeg')) else 1)"; then
+            warrini render examples/vpn-password --quality fast -o example.mp4
+            ffprobe -v error -show_entries format=duration -of csv=p=0 example.mp4
+          else
+            echo "::warning::This ffmpeg build has no libass; Warrini refuses to render and doctor explains the fix."
+            if warrini render examples/vpn-password --quality fast -o example.mp4; then exit 1; fi
+          fi
